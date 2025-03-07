@@ -74,48 +74,12 @@ namespace KrunchyAutoBattle
 
         public static float gameSpeed = 1f;
 
-        public static System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode> dictionary = new System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode>();
-        public static System.Collections.Generic.HashSet<Vector2Int> hashSet = new System.Collections.Generic.HashSet<Vector2Int>();
-
-
-        //System.Type genericDictionaryType = typeof(Il2CppSystem.Collections.Generic.Dictionary<,>);
-        //System.Type genericHashSetType = System.Collections.Generic.HashSet<>;
+        //public static System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode> dictionary = new System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode>();
+        //public static System.Collections.Generic.HashSet<Vector2Int> hashSet = new System.Collections.Generic.HashSet<Vector2Int>();
 
         internal static bool IsEnableAutoSkills()
         {
             return enableAuto;
-        }
-
-        private void RegisterGenericDictionary()
-        {
-            try
-            {
-                // Get the generic type definition
-                //System.Type genericDictionaryType = typeof(Il2CppSystem.Collections.Generic.Dictionary<,>);
-                //System.Type genericHashSetType = typeof(Il2CppSystem.Collections.Generic.HashSet<>);
-
-                // Create the concrete generic instantiation
-                //System.Type concreteDictionaryType = genericDictionaryType.MakeGenericType(typeof(Vector2Int), typeof(BattleRoomNode));
-                // System.Type concreteHashSettype = genericHashSetType.MakeGenericType(typeof(Vector2Int));
-
-                // Register the concrete type
-                //UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteDictionaryType, true);
-                //UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteHashSettype, true);
-
-                // Simplified logger message
-                System.Type genericDictionaryType = System.Reflection.Assembly.Load("mscorlib").GetType("System.Collections.Generic.Dictionary`2");
-                System.Type genericHashSetType = System.Reflection.Assembly.Load("mscorlib").GetType("System.Collections.Generic.HashSet`1");
-                System.Type concreteDictionaryType = genericDictionaryType.MakeGenericType(typeof(Vector2Int), typeof(BattleRoomNode));
-                UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteDictionaryType, true);
-                System.Type concreteHashSetType = genericHashSetType.MakeGenericType(typeof(Vector2Int));
-                UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteHashSetType, true);
-
-                MelonLoader.MelonLogger.Msg($"Registered Dictionary<Vector2Int, BattleRoomNode> with IL2CPP.");
-            }
-            catch (System.Exception ex)
-            {
-                MelonLoader.MelonLogger.Error($"Failed to register generic dictionary: {ex}");
-            }
         }
 
         public void Init()
