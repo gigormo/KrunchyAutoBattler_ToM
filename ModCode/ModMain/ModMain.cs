@@ -1,40 +1,42 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
+﻿using System.Linq;
 using System.Reflection;
-using System.Web.UI;
-using DG.Tweening;
 using EBattleTypeData;
 using EGameTypeData;
 using EMapTypeData;
-using Harmony;
 using HarmonyLib;
 using Il2CppSystem;
 using Il2CppSystem.Collections.Generic;
-using MelonLoader;
-using UnhollowerBaseLib;
-using UnhollowerBaseLib.Runtime;
-using UnhollowerRuntimeLib;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using MelonLoader;
+using Harmony;
+using DG.Tweening;
+using UnhollowerBaseLib;
+using Unity.Collections;
+using System.Collections.Generic;
+using static UnityEngine.UISystemProfilerApi;
+
+
 
 namespace KrunchyAutoBattle
 {
-
     public class ModMain
     {
+        private static int excelMID = -1382759740;
+
+        private EffectBase effectCloseCollider;
+
         private TimerCoroutine corUpdate;
+
+        private static HarmonyLib.Harmony harmony;
 
         private Il2CppSystem.Action<ETypeData> callOpenUIEnd;
 
         private Il2CppSystem.Action<ETypeData> onBattleStart;
 
         private Il2CppSystem.Action<ETypeData> onBattleExit;
-
-        private Il2CppSystem.Action<ETypeData> onHaloTrigger;
-
-        private Il2CppSystem.Action<ETypeData> onHaloDestroy;
 
         private TimerCoroutine corUpdateInBattleStart;
 
@@ -72,22 +74,52 @@ namespace KrunchyAutoBattle
 
         public static float gameSpeed = 1f;
 
-        private static HarmonyLib.Harmony harmony;
+        public static System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode> dictionary = new System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode>();
+        public static System.Collections.Generic.HashSet<Vector2Int> hashSet = new System.Collections.Generic.HashSet<Vector2Int>();
 
-        public static bool autoAngleToggle;
 
-        public static bool playerIsHaloTarget;
-
-        public static Vector2 enemyHaloPosi;
+        //System.Type genericDictionaryType = typeof(Il2CppSystem.Collections.Generic.Dictionary<,>);
+        //System.Type genericHashSetType = System.Collections.Generic.HashSet<>;
 
         internal static bool IsEnableAutoSkills()
         {
             return enableAuto;
         }
 
-        public void Init()
-        { 
+        private void RegisterGenericDictionary()
+        {
+            try
+            {
+                // Get the generic type definition
+                //System.Type genericDictionaryType = typeof(Il2CppSystem.Collections.Generic.Dictionary<,>);
+                //System.Type genericHashSetType = typeof(Il2CppSystem.Collections.Generic.HashSet<>);
 
+                // Create the concrete generic instantiation
+                //System.Type concreteDictionaryType = genericDictionaryType.MakeGenericType(typeof(Vector2Int), typeof(BattleRoomNode));
+                // System.Type concreteHashSettype = genericHashSetType.MakeGenericType(typeof(Vector2Int));
+
+                // Register the concrete type
+                //UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteDictionaryType, true);
+                //UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteHashSettype, true);
+
+                // Simplified logger message
+                System.Type genericDictionaryType = System.Reflection.Assembly.Load("mscorlib").GetType("System.Collections.Generic.Dictionary`2");
+                System.Type genericHashSetType = System.Reflection.Assembly.Load("mscorlib").GetType("System.Collections.Generic.HashSet`1");
+                System.Type concreteDictionaryType = genericDictionaryType.MakeGenericType(typeof(Vector2Int), typeof(BattleRoomNode));
+                UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteDictionaryType, true);
+                System.Type concreteHashSetType = genericHashSetType.MakeGenericType(typeof(Vector2Int));
+                UnhollowerRuntimeLib.ClassInjector.RegisterTypeInIl2Cpp(concreteHashSetType, true);
+
+                MelonLoader.MelonLogger.Msg($"Registered Dictionary<Vector2Int, BattleRoomNode> with IL2CPP.");
+            }
+            catch (System.Exception ex)
+            {
+                MelonLoader.MelonLogger.Error($"Failed to register generic dictionary: {ex}");
+            }
+        }
+
+        public void Init()
+        {
             if (harmony != null)
             {
                 harmony.UnpatchSelf();
@@ -98,6 +130,11 @@ namespace KrunchyAutoBattle
             {
                 harmony = new HarmonyLib.Harmony("KrunchyAutoBattle");
             }
+            //System.Type HashSetType = typeof(System.Collections.Generic.HashSet<>);
+            //MethodInfo privateMethod = HashSetType.GetMethod("PrivateMethod", new System.Type[] { typeof(int) });
+
+            MelonLoader.MelonLogger.Msg($"BattleRoomNode type: {typeof(BattleRoomNode)}");
+
             harmony.PatchAll(Assembly.GetExecutingAssembly());
             corUpdate = g.timer.Frame((Il2CppSystem.Action)OnUpdate, 1, loop: true);
             callOpenUIEnd = (Il2CppSystem.Action<ETypeData>)OnOpenUIEnd;
@@ -106,20 +143,8 @@ namespace KrunchyAutoBattle
             g.events.On(EBattleType.BattleStart, onBattleStart, 0);
             onBattleExit = (Il2CppSystem.Action<ETypeData>)OnBattleExit;
             g.events.On(EBattleType.BattleExit, onBattleExit, 0);
-            onHaloTrigger = (Il2CppSystem.Action<ETypeData>)HaloAttackTrigger;
-            g.events.On(EBattleType.HaloAttackTrigger, onHaloTrigger, 0);
-            onHaloDestroy = (Il2CppSystem.Action<ETypeData>)UnitHaloDestroy;
-            g.events.On(EBattleType.UnitHaloDestroy, onHaloDestroy, 0);
-            playerIsHaloTarget = false;
-            enemyHaloPosi = Vector2.zero;
-
             FixXuliLimitTime();
             LogTool.Info("已经加载! [Auto Battle] has been loaded.");
-            MelonLogger.Warning("Test Hotkey Enabled");
-        }
-
-        public void testHotkeyFunc()
-        {
         }
 
         private void OnOpenUIEnd(ETypeData e)
@@ -263,9 +288,9 @@ namespace KrunchyAutoBattle
             System.Action<bool> action3 = delegate (bool isOn)
             {
                 settingData.AutoLeft = isOn;
-                SceneType.battle.battleMap.playerUnitCtrl.WingmanEnable(isOn);
             };
             component2.onValueChanged.AddListener(action3);
+            component2.gameObject.AddComponent<UISkyTipEffect>().InitData(GameTool.LS("AutoBattleText_26"));
             Toggle component3 = UnityEngine.Object.Instantiate(gameObject2, content).GetComponent<Toggle>();
             component3.isOn = settingData.AutoRight;
             component3.GetComponentInChildren<Text>().text = GameTool.LS("AutoBattleText_5");
@@ -432,7 +457,7 @@ namespace KrunchyAutoBattle
                 return;
             }
 
-            corUpdateInBattleStart = g.timer.Frame((Il2CppSystem.Action)delegate
+            corUpdateInBattleStart = g.timer.Frame((System.Action)delegate
             {
                 try
                 {
@@ -481,23 +506,34 @@ namespace KrunchyAutoBattle
                 ShowStartButton();
             }
 
-            SceneType.battle.battleMap.onBattlePassRoomOpenEffectCall += (Il2CppSystem.Action)delegate
+            SceneType.battle.battleMap.onBattlePassRoomOpenEffectCall += (Il2CppSystem.Action)(System.Action)delegate
             {
                 if (enableAuto && settingData.AutoMove)
                 {
-                    if (g.world.battle.data.dungeonBaseItem.type == 55)
+                    OnPsaaRoom();
+                    TimerCoroutine corCheck = null;
+                    Vector3 lasPosi = SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi;
+                    corCheck = SceneType.battle.timer.Time((System.Action)delegate
                     {
-                        StopAutoMoveNotYanwu();
-                        DaojieMoveCenter();
-                    }
-                    else
-                    {
-                        StopAutoMoveNotYanwu();
-                        MoveToPassLevelEffect();
-                    }
+                        if (!SceneType.battle.battleMap.playerUnitCtrl.move.isMove)
+                        {
+                            if ((double)Vector2.Distance(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, lasPosi) < 0.1)
+                            {
+                                OnPsaaRoom();
+                            }
+                            else
+                            {
+                                SceneType.battle.timer.Stop(corCheck);
+                            }
+                        }
+                        else
+                        {
+                            SceneType.battle.timer.Stop(corCheck);
+                        }
+                    }, 2f, loop: true);
                 }
             };
-            SceneType.battle.battleMap.onIntoRoomEnd += (Il2CppSystem.Action)delegate
+            SceneType.battle.battleMap.onIntoRoomEnd += (Il2CppSystem.Action)(System.Action)delegate
             {
                 if (enableAuto)
                 {
@@ -510,24 +546,28 @@ namespace KrunchyAutoBattle
             };
             if (SceneType.battle.battleMap.playerUnitCtrl.step != null)
             {
-                SceneType.battle.battleMap.playerUnitCtrl.step.onCreateEndCall += (Il2CppSystem.Action)delegate
+                SceneType.battle.battleMap.playerUnitCtrl.step.onCreateEndCall += (Il2CppSystem.Action)(System.Action)delegate
                 {
                     if (settingData.AutoMove && enableAuto && SceneType.battle.battleMap.playerUnitCtrl.step.data.stepBaseItem.id == 510111)
                     {
                         StartAutoMoveNotYanwu();
                     }
+
+                    DelEffectCloseCollider();
+                    AddEffectCloseCollider();
                 };
             }
 
-            SceneType.battle.battleMap.playerUnitCtrl.onDieCall += (Il2CppSystem.Action)delegate
+            SceneType.battle.battleMap.playerUnitCtrl.onDieCall += (Il2CppSystem.Action)(System.Action)delegate
             {
                 StopAutoBattle();
             };
-            SceneType.battle.battleMap.onBattleEndCall += (Il2CppSystem.Action<bool>)delegate
+            SceneType.battle.battleMap.onBattleEndCall += (Il2CppSystem.Action<bool>)(System.Action<bool>)delegate
             {
                 StopAutoBattle();
                 if (g.world.battle.data.dungeonBaseItem.type == 55)
                 {
+                    AddEffectCloseCollider();
                     DaojieMoveCenter();
                 }
             };
@@ -560,6 +600,20 @@ namespace KrunchyAutoBattle
             autoStartCor = SceneType.battle.timer.Time(action, 0.3f, loop: true);
         }
 
+        private void OnPsaaRoom()
+        {
+            if (g.world.battle.data.dungeonBaseItem.type == 55)
+            {
+                StopAutoMoveNotYanwu();
+                DaojieMoveCenter();
+            }
+            else
+            {
+                StopAutoMoveNotYanwu();
+                MoveToPassLevelEffect();
+            }
+        }
+
         private void ShowIsAutoFightingIcon()
         {
             try
@@ -571,7 +625,7 @@ namespace KrunchyAutoBattle
                     go.name = "AutoBattleInfo";
                     go.transform.localPosition += new Vector3(-17f, -355f, 0f);
                     go.transform.Find("Text").GetComponent<Text>().text = GameTool.LS("AutoBattleText_22");
-                    go.GetComponentInChildren<Button>().onClick.AddListener((UnityAction)delegate
+                    go.GetComponentInChildren<Button>().onClick.AddListener((System.Action)delegate
                     {
                         go.GetComponentInChildren<Button>().interactable = false;
                         go.GetComponentInChildren<Button>().interactable = true;
@@ -595,21 +649,18 @@ namespace KrunchyAutoBattle
 
         private void ShowStartButton()
         {
+            GameObject go;
             try
             {
                 uIBattleInfo.uiInfo.goInfoRoot.transform.parent.Find("AutoBattleInfo")?.gameObject.SetActive(value: false);
                 if (uIBattleInfo.uiInfo.goInfoRoot.transform.Find("StartAutoBattle") == null)
                 {
-                    GameObject go = UnityEngine.Object.Instantiate(g.res.Load<GameObject>("UI/StartAutoBattle"), uIBattleInfo.uiInfo.goInfoRoot.transform);
+                    go = UnityEngine.Object.Instantiate(g.res.Load<GameObject>("UI/StartAutoBattle"), uIBattleInfo.uiInfo.goInfoRoot.transform);
                     go.name = "StartAutoBattle";
                     go.transform.localPosition += new Vector3(-17f, 110f, 0f);
-                    go.GetComponentInChildren<Button>().onClick.AddListener((UnityAction)delegate
+                    go.GetComponentInChildren<Button>().onClick.AddListener((System.Action)delegate
                     {
-                        go.GetComponentInChildren<Button>().interactable = false;
-                        go.GetComponentInChildren<Button>().interactable = true;
-                        enableAuto = true;
-                        ShowIsAutoFightingIcon();
-                        StartAutoBattle();
+                        ClickAction();
                     });
                     go.AddComponent<UISkyTipEffect>().InitData(GameTool.LS("AutoBattleText_21"));
                 }
@@ -624,6 +675,37 @@ namespace KrunchyAutoBattle
                 LogTool.Error($"副本id={g.world.battle.data.dungeonBaseItem.id} 类型={g.world.battle.data.dungeonBaseItem.type} 疑似异常2，请反馈给作者");
                 LogTool.Error(ex.Message);
             }
+
+            void ClickAction()
+            {
+                go.GetComponentInChildren<Button>().interactable = false;
+                go.GetComponentInChildren<Button>().interactable = true;
+                if (!(g.ui.GetUI<UIBattleExit>(UIType.BattleExit) != null))
+                {
+                    if (SceneType.battle.battleMap.isStartBattle && SceneType.battle.battleMap.isActiveBattle)
+                    {
+                        enableAuto = true;
+                        ShowIsAutoFightingIcon();
+                        StartAutoBattle();
+                    }
+                    else
+                    {
+                        TimerCoroutine autoStartCor = null;
+                        System.Action action = delegate
+                        {
+                            SceneType.battle.timer.Stop(autoStartCor);
+                            uIBattleInfo.uiStartBattle.btnStart.onClick.Invoke();
+                            if (!uIBattleInfo.uiStartBattle.goGroupRoot.activeSelf)
+                            {
+                                enableAuto = true;
+                                ShowIsAutoFightingIcon();
+                                StartAutoBattle();
+                            }
+                        };
+                        autoStartCor = SceneType.battle.timer.Frame(action, 1);
+                    }
+                }
+            }
         }
 
         private void StartAutoBattle()
@@ -635,6 +717,14 @@ namespace KrunchyAutoBattle
             StartAutoSkills();
         }
 
+        private void StartAutoBattleNotYanwu()
+        {
+            playerLasPosi = new Vector2(0f, 0f);
+            enableAuto = true;
+            StartAutoMoveNotYanwu();
+            StartAutoSkills();
+        }
+
         private void StopAutoBattle()
         {
             enableAuto = false;
@@ -643,19 +733,9 @@ namespace KrunchyAutoBattle
             StopAutoSkills();
         }
 
-        private void StartAutoBattleNotYanwu()
-        {
-            playerLasPosi = new Vector2(0f, 0f);
-            enableAuto = true;
-            ChangeGameSpeed();
-            StartAutoMoveNotYanwu();
-            StartAutoSkills();
-        }
-
         private void StopAutoBattleNotYanwu()
         {
             enableAuto = false;
-            ResetGameSpeed();
             StopAutoMoveNotYanwu();
             StopAutoSkills();
         }
@@ -696,7 +776,6 @@ namespace KrunchyAutoBattle
                 corAutoMoveChecking.Stop();
                 corAutoMoveChecking = null;
             }
-  
 
             if (!settingData.AutoMove || g.world.battle.data.dungeonBaseItem.type == 65)
             {
@@ -704,6 +783,7 @@ namespace KrunchyAutoBattle
             }
 
             FootYanwu();
+            AddEffectCloseCollider();
             propGetDis = SceneType.battle.battleMap.playerUnitCtrl.dropDis.value;
             SceneType.battle.battleMap.playerUnitCtrl.dropDis = new DynInt(autoDropDis);
             if (SceneType.battle.battleMap.isPassRoom)
@@ -723,7 +803,7 @@ namespace KrunchyAutoBattle
             SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
             moveFlag = 0;
             RandomMove();
-            corAutoMoveChecking = SceneType.battle.timer.Time((Il2CppSystem.Action)delegate
+            corAutoMoveChecking = SceneType.battle.timer.Time((System.Action)delegate
             {
                 if (!SceneType.battle.battleMap.playerUnitCtrl.move.isMove && (double)Vector2.Distance(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, playerLasPosi) < 0.1)
                 {
@@ -744,6 +824,7 @@ namespace KrunchyAutoBattle
                 corAutoMoveChecking = null;
             }
 
+            DelEffectCloseCollider();
             moveFlag = 1;
             if (SceneType.battle != null && SceneType.battle.battleMap != null && SceneType.battle.battleMap.playerUnitCtrl != null)
             {
@@ -751,10 +832,7 @@ namespace KrunchyAutoBattle
                 SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
             }
 
-            if (goEffect != null)
-            {
-                UnityEngine.Object.Destroy(goEffect);
-            }
+            DestroyYanwu();
         }
 
         private void StartAutoMoveNotYanwu()
@@ -789,7 +867,7 @@ namespace KrunchyAutoBattle
             SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
             moveFlag = 0;
             RandomMove();
-            corAutoMoveChecking = SceneType.battle.timer.Time((Il2CppSystem.Action)delegate
+            corAutoMoveChecking = SceneType.battle.timer.Time((System.Action)delegate
             {
                 if (!SceneType.battle.battleMap.playerUnitCtrl.move.isMove && (double)Vector2.Distance(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, playerLasPosi) < 0.1)
                 {
@@ -820,12 +898,7 @@ namespace KrunchyAutoBattle
 
         private void FootYanwu()
         {
-            if (goEffect != null)
-            {
-                UnityEngine.Object.Destroy(goEffect);
-            }
-
-            if (g.world.playerUnit.data.dynUnitData.curGrade >= 9)
+            if (g.world.playerUnit.data.dynUnitData.GetGrade() >= 9 || goEffect != null)
             {
                 return;
             }
@@ -844,9 +917,31 @@ namespace KrunchyAutoBattle
             });
         }
 
+        private void DestroyYanwu()
+        {
+            if (g.world.playerUnit.data.dynUnitData.GetGrade() < 9 && goEffect != null)
+            {
+                goEffect.GetComponent<EffectUnitNodeCtrl>()?.DelOneEffect();
+                UnityEngine.Object.Destroy(goEffect);
+            }
+        }
+
+        private void AddEffectCloseCollider()
+        {
+            ConfBattleEffectItem item = g.conf.battleEffect.GetItem(excelMID + 1);
+            effectCloseCollider = SceneType.battle.battleMap.playerUnitCtrl.AddEffect(item, SceneType.battle.battleMap.playerUnitCtrl, new SkillCreateData());
+        }
+
+        private void DelEffectCloseCollider()
+        {
+            if (effectCloseCollider != null)
+            {
+                SceneType.battle?.battleMap?.playerUnitCtrl?.DelEffect(effectCloseCollider);
+            }
+        }
+
         private void StartAutoSkills()
         {
-            SceneType.battle.battleMap.playerUnitCtrl.WingmanEnable(enable: true);
             if (corAutoPlayerMoveAndSkill != null)
             {
                 corAutoPlayerMoveAndSkill.Stop();
@@ -854,7 +949,7 @@ namespace KrunchyAutoBattle
             }
 
             zhenlongCount = 0;
-            corAutoPlayerMoveAndSkill = SceneType.battle.timer.Time((Il2CppSystem.Action)delegate
+            corAutoPlayerMoveAndSkill = SceneType.battle.timer.Time((System.Action)delegate
             {
                 AutoBattleSkills();
             }, 0.2f, loop: true);
@@ -862,11 +957,6 @@ namespace KrunchyAutoBattle
 
         private void StopAutoSkills()
         {
-            if (SceneType.battle != null && SceneType.battle.battleMap != null && SceneType.battle.battleMap.playerUnitCtrl != null)
-            {
-                SceneType.battle.battleMap.playerUnitCtrl.WingmanEnable(enable: false);
-            }
-
             if (corAutoPlayerMoveAndSkill != null)
             {
                 corAutoPlayerMoveAndSkill.Stop();
@@ -915,9 +1005,9 @@ namespace KrunchyAutoBattle
                     FootYanwu();
                 }
             }
-            else if (goEffect != null)
+            else
             {
-                UnityEngine.Object.Destroy(goEffect);
+                DestroyYanwu();
             }
 
             if (!enableAuto || SceneType.battle.battleMap.isPassRoom)
@@ -1016,21 +1106,19 @@ namespace KrunchyAutoBattle
                 skillFlag = 4;
                 if (settingData.AutoImmortalSkill && SceneType.battle.battleMap.playerUnitCtrl.immortalSkill != null)
                 {
-                    List<ImmortalSkillBase>.Enumerator enumerator2 = SceneType.battle.battleMap.playerUnitCtrl.immortalSkill.GetEnumerator();
+                    Il2CppSystem.Collections.Generic.List<ImmortalSkillBase>.Enumerator enumerator2 = SceneType.battle.battleMap.playerUnitCtrl.immortalSkill.GetEnumerator();
                     while (enumerator2.MoveNext())
                     {
                         ImmortalSkillBase current = enumerator2.Current;
                         if (current.IsCreate(isTip: false))
                         {
                             StopAutoBattleNotYanwu();
-                            UnitCtrlBase nearUnit = AITool.GetNearEnemyUnit(SceneType.battle.battleMap.playerUnitCtrl);
+                            UnitCtrlBase nearUnit = SceneType.battle.unit.GetNearUnit(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, UnitType.Monst);
                             Vector2 vector;
                             Vector2 dire;
                             if (nearUnit != null)
                             {
                                 vector = nearUnit.posiCenter.position;
-
-                                //dire = vector - (Vector2)SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi;
                                 dire = vector - (Vector2)SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi;
                             }
                             else
@@ -1039,7 +1127,7 @@ namespace KrunchyAutoBattle
                                 dire = new Vector2(0f, 0.5f);
                             }
 
-                            current.Create(vector, dire, (Il2CppSystem.Action)delegate
+                            current.Create(vector, dire, (System.Action)delegate
                             {
                                 StartAutoBattleNotYanwu();
                             });
@@ -1087,7 +1175,7 @@ namespace KrunchyAutoBattle
 
         private bool UseProp()
         {
-            List<PropItemBase>.Enumerator enumerator = SceneType.battle.battleMap.playerUnitCtrl.props.GetEnumerator();
+            Il2CppSystem.Collections.Generic.List<PropItemBase>.Enumerator enumerator = SceneType.battle.battleMap.playerUnitCtrl.props.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 PropItemBase current = enumerator.Current;
@@ -1141,7 +1229,7 @@ namespace KrunchyAutoBattle
 
         private Vector2 GetUsePosi()
         {
-            UnitCtrlBase nearUnit = AITool.GetNearEnemyUnit(SceneType.battle.battleMap.playerUnitCtrl);
+            UnitCtrlBase nearUnit = SceneType.battle.unit.GetNearUnit(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, UnitType.Monst);
             if (nearUnit != null)
             {
                 return nearUnit.posiCenter.position;
@@ -1206,26 +1294,16 @@ namespace KrunchyAutoBattle
         {
             SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
             Vector2 skillRangeRandomPosi = GetSkillRangeRandomPosi();
-            //UnitCtrlBase NearUnit = SceneType.battle.unit.GetNearUnit(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, UnitType.Monst);
-            // NearUnitFriendly = g.data.unit.GetUnit().;
-            //(float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f
-            SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(skillRangeRandomPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 100f, (Il2CppSystem.Action)delegate
+            SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(skillRangeRandomPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f, (System.Action)delegate
             {
-            if (enableAuto && settingData.AutoMove && !SceneType.battle.battleMap.playerUnitCtrl.isDie)
-            {
-                if (SceneType.battle.battleMap.isPassRoom)
+                if (enableAuto && settingData.AutoMove && !SceneType.battle.battleMap.playerUnitCtrl.isDie)
                 {
-                        if (AITool.GetNearEnemyUnit(SceneType.battle.battleMap.playerUnitCtrl) != null)
+                    if (SceneType.battle.battleMap.isPassRoom)
+                    {
+                        if (SceneType.battle.unit.GetNearUnit(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, UnitType.Monst) != null)
                         {
-                                if (moveFlag == 0)
-                                {
-                                    RandomMove();
-                                }
-                                else
-                                {
-                                    moveFlag = 0;
-                                }
-                            }
+                            RandomMove();
+                        }
                         else
                         {
                             moveFlag = 0;
@@ -1239,13 +1317,9 @@ namespace KrunchyAutoBattle
                             }
                         }
                     }
-                    else if (moveFlag == 0)
-                    {
-                        RandomMove();
-                    }
                     else
                     {
-                        moveFlag = 0;
+                        RandomMove();
                     }
                 }
             }, Ease.Linear, isForceMoveEndCall: true);
@@ -1283,14 +1357,14 @@ namespace KrunchyAutoBattle
 
         private Vector2 GetSkillRangeRandomPosi()
         {
-            float num = GetSkillMinRange();
-            if (num <= 0f)
+            int num = GetSkillMinRange() / 100;
+            if (num <= 0)
             {
-                num = 2f;
+                num = 2;
             }
 
-            UnitCtrlBase nearUnit = AITool.GetNearEnemyUnit(SceneType.battle.battleMap.playerUnitCtrl);
-            if (nearUnit != null && !playerIsHaloTarget)
+            UnitCtrlBase nearUnit = SceneType.battle.unit.GetNearUnit(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, UnitType.Monst);
+            if (nearUnit != null)
             {
                 return getPointsOnMovingArc.GetPointOnMovingArc(nearUnit, nearUnit.posiCenter.position, SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, num);
             }
@@ -1298,32 +1372,30 @@ namespace KrunchyAutoBattle
             return getPointsOnMovingArc.AroundTrajectory();
         }
 
-        private float GetSkillMinRange()
+        private int GetSkillMinRange()
         {
-            float result = 0;
+            int result = 0;
             if (SceneType.battle.battleMap.playerUnitCtrl.skills != null && SceneType.battle.battleMap.playerUnitCtrl.skills.Count > 0)
             {
-                System.Collections.Generic.List<float> list = new System.Collections.Generic.List<float>();
-                List<SkillAttack>.Enumerator enumerator = SceneType.battle.battleMap.playerUnitCtrl.skills.GetEnumerator();
+                System.Collections.Generic.List<int> list = new System.Collections.Generic.List<int>();
+                Il2CppSystem.Collections.Generic.List<SkillAttack>.Enumerator enumerator = SceneType.battle.battleMap.playerUnitCtrl.skills.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
                     SkillAttack current = enumerator.Current;
-                    if (AITool.GetMinAttackDis(SceneType.battle.battleMap.playerUnitCtrl.skills, current) > 0)
+                    if (current.GetAttackDis() > 0)
                     {
-                        list.Add(AITool.GetMinAttackDis(SceneType.battle.battleMap.playerUnitCtrl.skills, current));
+                        list.Add(current.GetAttackDis());
                     }
                 }
 
                 if (SceneType.battle.battleMap.playerUnitCtrl.ultimate != null)
                 {
-                    //list.Add(SceneType.battle.battleMap.playerUnitCtrl.ultimate.GetAttackDis());
-                    list.Add(AITool.GetMinAttackDis(SceneType.battle.battleMap.playerUnitCtrl.skills, SceneType.battle.battleMap.playerUnitCtrl.ultimate));
-
+                    list.Add(SceneType.battle.battleMap.playerUnitCtrl.ultimate.GetAttackDis());
                 }
 
                 if (list.Count > 0)
                 {
-                    result = list.Average();
+                    result = list.Min();
                 }
             }
 
@@ -1353,20 +1425,20 @@ namespace KrunchyAutoBattle
 
             return result;
         }
-
-        public List<BattleRoomNode> FindPathToUnfinishedRoom(BattleRoomNode currentRoom)
+        
+        public System.Collections.Generic.List<BattleRoomNode> FindPathToUnfinishedRoom(BattleRoomNode currentRoom)
         {
-            Dictionary<Vector2Int, BattleRoomNode> dictionary = new Dictionary<Vector2Int, BattleRoomNode>();
-            Queue<BattleRoomNode> queue = new Queue<BattleRoomNode>();
-
+            System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode> dictionary = new System.Collections.Generic.Dictionary<Vector2Int, BattleRoomNode>();
+            Il2CppSystem.Collections.Generic.Queue<BattleRoomNode> queue = new Il2CppSystem.Collections.Generic.Queue<BattleRoomNode>();
+            System.Collections.Generic.HashSet<Vector2Int> hashSet = new System.Collections.Generic.HashSet<Vector2Int>();
             queue.Enqueue(currentRoom);
-
+            hashSet.Add(currentRoom.point);
             while (queue.Count > 0)
             {
                 BattleRoomNode battleRoomNode = queue.Dequeue();
                 if (!SceneType.battle.battleMap.IsPassRoom(battleRoomNode) && currentRoom.point != battleRoomNode.point)
                 {
-                    List<BattleRoomNode> list = new List<BattleRoomNode>();
+                    System.Collections.Generic.List<BattleRoomNode> list = new System.Collections.Generic.List<BattleRoomNode>();
                     for (BattleRoomNode battleRoomNode2 = battleRoomNode; battleRoomNode2 != null; battleRoomNode2 = ((!dictionary.ContainsKey(battleRoomNode2.point)) ? null : dictionary[battleRoomNode2.point]))
                     {
                         if (currentRoom.point != battleRoomNode2.point)
@@ -1374,39 +1446,44 @@ namespace KrunchyAutoBattle
                             list.Insert(0, battleRoomNode2);
                         }
                     }
+
                     return list;
                 }
 
-                if (battleRoomNode.up != null)
+                if (battleRoomNode.up != null && !hashSet.Contains(battleRoomNode.up.point))
                 {
                     queue.Enqueue(battleRoomNode.up);
+                    hashSet.Add(battleRoomNode.up.point);
                     if (battleRoomNode.up.point != currentRoom.point)
                     {
                         dictionary[battleRoomNode.up.point] = battleRoomNode;
                     }
                 }
 
-                if (battleRoomNode.down != null)
+                if (battleRoomNode.down != null && !hashSet.Contains(battleRoomNode.down.point))
                 {
                     queue.Enqueue(battleRoomNode.down);
+                    hashSet.Add(battleRoomNode.down.point);
                     if (battleRoomNode.down.point != currentRoom.point)
                     {
                         dictionary[battleRoomNode.down.point] = battleRoomNode;
                     }
                 }
 
-                if (battleRoomNode.left != null)
+                if (battleRoomNode.left != null && !hashSet.Contains(battleRoomNode.left.point))
                 {
                     queue.Enqueue(battleRoomNode.left);
+                    hashSet.Add(battleRoomNode.left.point);
                     if (battleRoomNode.left.point != currentRoom.point)
                     {
                         dictionary[battleRoomNode.left.point] = battleRoomNode;
                     }
                 }
 
-                if (battleRoomNode.right != null)
+                if (battleRoomNode.right != null && !hashSet.Contains(battleRoomNode.right.point))
                 {
                     queue.Enqueue(battleRoomNode.right);
+                    hashSet.Add(battleRoomNode.right.point);
                     if (battleRoomNode.right.point != currentRoom.point)
                     {
                         dictionary[battleRoomNode.right.point] = battleRoomNode;
@@ -1414,7 +1491,7 @@ namespace KrunchyAutoBattle
                 }
             }
 
-            return new List<BattleRoomNode>();
+            return new System.Collections.Generic.List<BattleRoomNode>();
         }
 
         private Vector2 GetPassLevelPosi(BattleRoomNode currentRoom, BattleRoomNode nextRoom)
@@ -1458,17 +1535,13 @@ namespace KrunchyAutoBattle
             }
 
             SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
-            List<BattleRoomNode> list = FindPathToUnfinishedRoom(SceneType.battle.battleMap.roomNode);
+            System.Collections.Generic.List<BattleRoomNode> list = FindPathToUnfinishedRoom(SceneType.battle.battleMap.roomNode);
             if (list.Count == 0)
             {
                 ShowStartButton();
                 StopAutoBattle();
                 UITipItem.AddTip(GameTool.LS("AutoBattleText_24"), 2f);
-                if (goEffect != null)
-                {
-                    UnityEngine.Object.Destroy(goEffect);
-                }
-
+                DestroyYanwu();
                 return;
             }
 
@@ -1478,10 +1551,7 @@ namespace KrunchyAutoBattle
                 ShowStartButton();
                 StopAutoBattle();
                 UITipItem.AddTip(GameTool.LS("AutoBattleText_24"), 2f);
-                if (goEffect != null)
-                {
-                    UnityEngine.Object.Destroy(goEffect);
-                }
+                DestroyYanwu();
             }
             else
             {
@@ -1490,11 +1560,11 @@ namespace KrunchyAutoBattle
 
             void MoveToLevel()
             {
-                if (!((double)Vector2.Distance(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, targetPassLevelPosi) < 0.8))
+                if (!((double)Vector2.Distance(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi, targetPassLevelPosi) < 0.5))
                 {
                     SceneType.battle.battleMap.playerUnitCtrl.anim.ResetBool();
                     SceneType.battle.battleMap.playerUnitCtrl.move.SetDire(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi.x > targetPassLevelPosi.x);
-                    SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(targetPassLevelPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f, (Il2CppSystem.Action)delegate
+                    SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(targetPassLevelPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f, (System.Action)delegate
                     {
                         if (SceneType.battle.battleMap.isPassRoom && enableAuto && settingData.AutoMove && !SceneType.battle.battleMap.playerUnitCtrl.isDie)
                         {
@@ -1508,7 +1578,7 @@ namespace KrunchyAutoBattle
         private bool IsPassAllRoom()
         {
             bool result = true;
-            List<BattleRoomNode>.Enumerator enumerator = SceneType.battle.room.room.allRoom.GetEnumerator();
+            Il2CppSystem.Collections.Generic.List<BattleRoomNode>.Enumerator enumerator = SceneType.battle.room.room.allRoom.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 BattleRoomNode current = enumerator.Current;
@@ -1524,15 +1594,14 @@ namespace KrunchyAutoBattle
         private void DaojieMoveCenter()
         {
             SceneType.battle.battleMap.playerUnitCtrl.move.StopMove();
-            FootYanwu();
-            if ((double)Vector2.Distance(SceneType.battle.battleMap.roomCenterPosi, SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi) > 0.7)
+            if ((double)Vector2.Distance(SceneType.battle.battleMap.roomCenterPosi, SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi) > 0.5)
             {
                 SceneType.battle.battleMap.playerUnitCtrl.anim.ResetBool();
                 SceneType.battle.battleMap.playerUnitCtrl.move.SetDire(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi.x > SceneType.battle.battleMap.roomCenterPosi.x);
-                SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(SceneType.battle.battleMap.roomCenterPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f, (Il2CppSystem.Action)delegate
+                SceneType.battle.battleMap.playerUnitCtrl.move.MovePosi(SceneType.battle.battleMap.roomCenterPosi, (float)SceneType.battle.battleMap.playerUnitCtrl.data.moveSpeed.value / 130f, (System.Action)delegate
                 {
                     DaojieMoveCenter();
-                }, Ease.Linear, isForceMoveEndCall: true);
+                },  Ease.Linear, isForceMoveEndCall: true);
             }
         }
 
@@ -1543,55 +1612,18 @@ namespace KrunchyAutoBattle
             g.events.Off(EGameType.OpenUIEnd, callOpenUIEnd);
             g.events.Off(EBattleType.BattleStart, onBattleStart);
             g.events.Off(EBattleType.BattleExit, onBattleExit);
-            g.events.Off(EBattleType.HaloAttackTrigger, onHaloTrigger);
-            g.events.Off(EBattleType.UnitHaloDestroy, onHaloDestroy);
         }
 
-
-        public void UnitHaloDestroy(ETypeData e)
+        public void  OnUpdate()
         {
-            UnitHaloDestroy edata = e.Cast<UnitHaloDestroy>();
-            if (edata != null)
-            {
-                if (SceneType.battle.battleMap.playerUnitCtrl != null && enemyHaloPosi != null)
-                {
-                    playerIsHaloTarget = false;
-                    enemyHaloPosi = SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi;
-                }
-            }
-        }
-
-        public void HaloAttackTrigger(ETypeData e)
-        {
-            HaloAttackTrigger edata = e.Cast<HaloAttackTrigger>();
-
-            if (edata != null)
-            {
-                enemyHaloPosi = edata.haloAttack.createPosi;
-                if (SceneType.battle.battleMap.playerUnitCtrl != null && enemyHaloPosi != null)
-                {
-                    if (edata.haloAttack.IsTarget(SceneType.battle.battleMap.playerUnitCtrl))
-                    {
-                        playerIsHaloTarget = true;
-                    }
-                }
-            }
-        }
-        private void OnUpdate()
-        {
-            if (Input.GetKeyDown(KeyCode.F4))
-            {
-                testHotkeyFunc();
-
-            }
             if (SceneType.battle == null || SceneType.battle.battleMap == null)
             {
                 return;
             }
 
-            if ((!settingData.AutoMove || !enableAuto) && goEffect != null)
+            if (!settingData.AutoMove || !enableAuto)
             {
-                UnityEngine.Object.Destroy(goEffect);
+                DestroyYanwu();
             }
 
             if (!enableAuto || SceneType.battle.battleMap.playerUnitCtrl.isDie || SceneType.battle.battleMap.isPassRoom)
@@ -1601,7 +1633,6 @@ namespace KrunchyAutoBattle
 
             if (settingData.AutoLeft)
             {
-                AITool.SetBulletAngleAtUnit(SceneType.battle.battleMap.playerUnitCtrl, AITool.GetNearEnemyUnit(SceneType.battle.battleMap.playerUnitCtrl));
                 SceneType.battle.battleMap.playerUnitCtrl.inputCtrl.UseSkill(MartialType.SkillLeft);
             }
 
@@ -1616,16 +1647,16 @@ namespace KrunchyAutoBattle
                 return;
             }
 
-            List<UnitCtrlMonst>.Enumerator enumerator = devilDemonAbsorb.absorbPreUnit.GetEnumerator();
+           Il2CppSystem.Collections.Generic.List<UnitCtrlMonst>.Enumerator enumerator = devilDemonAbsorb.absorbPreUnit.GetEnumerator();
             while (enumerator.MoveNext())
             {
                 UnitCtrlMonst current = enumerator.Current;
                 if (devilDemonAbsorb.GetAbsorbRate(current) >= settingData.DemonAbsorbAtRate)
                 {
-                    List<UnitCtrlMonst> list = new List<UnitCtrlMonst>();
+                    Il2CppSystem.Collections.Generic.List<UnitCtrlMonst> list = new Il2CppSystem.Collections.Generic.List<UnitCtrlMonst>();
                     list.Add(current);
                     StopAutoBattleNotYanwu();
-                    SceneType.battle.battleMap.playerUnitCtrl.devilDemonSkill.devilDemonAbsorb.AbsorbShow(list, (Il2CppSystem.Action)delegate
+                    SceneType.battle.battleMap.playerUnitCtrl.devilDemonSkill.devilDemonAbsorb.AbsorbShow(list, (System.Action)delegate
                     {
                         StartAutoBattleNotYanwu();
                     });

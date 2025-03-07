@@ -34,3 +34,4 @@ C:\Games\Tale of Immortal\ModExportData\KrunchyAutoBattle\ModProject\ModCode\Mod
 C:\Games\Tale of Immortal\ModExportData\KrunchyAutoBattle\ModProject\ModCode\ModMain\obj\Release\ModMain.pdb
 C:\Games\Tale of Immortal\ModExportData\Mod_KrunchyAutoBattle\ModCode\dll\ModMain.dll
 C:\Games\Tale of Immortal\ModExportData\Mod_KrunchyAutoBattle\ModCode\dll\ModMain.pdb
+C:\Games\Tale of Immortal\ModExportData\KrunchyAutoBattle\ModProject\ModCode\ModMain\obj\Release\ModMain.csproj.Up2Date

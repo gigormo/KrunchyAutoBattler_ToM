@@ -1,9 +1,4 @@
-﻿#region Assembly MOD_PFAutoBattle, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
-// C:\Games\Tale of Immortal v1.2.107.259\ModExportData\3334313052 _b__color=#811328__size=25_自动战斗__size___color___b_\ModCode\dll\MOD_PFAutoBattle.dll
-// Decompiled with ICSharpCode.Decompiler 8.1.1.7464
-#endregion
-
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace KrunchyAutoBattle
@@ -13,6 +8,8 @@ namespace KrunchyAutoBattle
         private Vector2 leftDown;
 
         private Vector2 rightUp;
+
+        private float maxR;
 
         private float angle;
 
@@ -26,14 +23,13 @@ namespace KrunchyAutoBattle
         {
             this.leftDown = leftDown;
             this.rightUp = rightUp;
+            float num = (rightUp.x - leftDown.x) / 2f;
+            float num2 = (rightUp.y - leftDown.y) / 2f;
+            maxR = ((num < num2) ? num : num2);
         }
 
         internal Vector2 AroundTrajectory()
         {
-            if (ModMain.playerIsHaloTarget)
-            {
-                return GetPlayerPosiType(ModMain.enemyHaloPosi);
-            }
             return GetPlayerPosiType(SceneType.battle.battleMap.playerUnitCtrl.move.lastPosi);
         }
 
@@ -114,12 +110,12 @@ namespace KrunchyAutoBattle
         private Vector2 FarAway(Vector2 monstPosi, Vector2 playerPosi, float awayDis)
         {
             Vector2 result = OppositePosi(monstPosi, playerPosi, awayDis);
-            if (result.x >= leftDown.x && result.x <= rightUp.x && result.y >= leftDown.y && result.y <= rightUp.y)
+            if (result.x < leftDown.x || result.x > rightUp.x || result.y < leftDown.y || result.y > rightUp.y)
             {
-                return result;
+                return RandomNineSquareGridPosi(playerPosi);
             }
 
-            return RandomNineSquareGridPosi(playerPosi);
+            return result;
         }
 
         private Vector2 OppositePosi(Vector2 monstPosi, Vector2 playerPosi, float r)
@@ -236,14 +232,23 @@ namespace KrunchyAutoBattle
             return new Vector2(x, y);
         }
 
-        internal Vector2 GetPointOnMovingArc(UnitCtrlBase ctrlBase, Vector2 monstPosi, Vector2 playerPosi, float r)
+        internal Vector2 GetPointOnMovingArc(UnitCtrlBase ctrlBase, Vector2 monstPosi, Vector2 playerPosi, float skillRange)
         {
+            if (skillRange > maxR)
+            {
+                skillRange = maxR;
+            }
+
             float num = Vector2.Distance(playerPosi, monstPosi);
-            float num2 = r * 5f / 6f;
-            if (num < num2)
+            float r = skillRange * 1.1f;
+            if (num < skillRange * 0.9f)
             {
                 lastCtrlBase = null;
-                return FarAway(monstPosi, playerPosi, r);
+                Vector2 result = OppositePosi(monstPosi, playerPosi, r);
+                if (!(result.x < leftDown.x) && !(result.x > rightUp.x) && !(result.y < leftDown.y) && !(result.y > rightUp.y))
+                {
+                    return result;
+                }
             }
 
             if (lastCtrlBase == null)
@@ -268,12 +273,12 @@ namespace KrunchyAutoBattle
                     angle += (float)i * ((float)Math.PI / 180f);
                 }
 
-                float x = monstPosi.x + r * Mathf.Cos(angle);
-                float y = monstPosi.y + r * Mathf.Sin(angle);
-                Vector2 result = new Vector2(x, y);
-                if (result.x >= leftDown.x && result.x <= rightUp.x && result.y >= leftDown.y && result.y <= rightUp.y && (IsSameDir(result.x - monstPosi.x, playerPosi.x - monstPosi.x) || IsSameDir(result.y - monstPosi.y, playerPosi.y - monstPosi.y)))
+                float x = monstPosi.x + skillRange * Mathf.Cos(angle);
+                float y = monstPosi.y + skillRange * Mathf.Sin(angle);
+                Vector2 result2 = new Vector2(x, y);
+                if (result2.x >= leftDown.x && result2.x <= rightUp.x && result2.y >= leftDown.y && result2.y <= rightUp.y && (IsSameDir(result2.x - monstPosi.x, playerPosi.x - monstPosi.x) || IsSameDir(result2.y - monstPosi.y, playerPosi.y - monstPosi.y)))
                 {
-                    return result;
+                    return result2;
                 }
             }
 
@@ -296,54 +301,3 @@ namespace KrunchyAutoBattle
         }
     }
 }
-#if false // Decompilation log
-'194' items in cache
-------------------
-Resolve: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\mscorlib.dll'
-------------------
-Resolve: 'Il2Cppmscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'Il2Cppmscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\Il2Cppmscorlib.dll'
-------------------
-Resolve: 'Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\MelonLoader\Managed\Assembly-CSharp.dll'
-------------------
-Resolve: 'UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\UnityEngine.CoreModule.dll'
-------------------
-Resolve: '0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: '0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\0Harmony.dll'
-------------------
-Resolve: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.dll'
-------------------
-Resolve: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Found single assembly: 'System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
-Load from: 'C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2\System.Core.dll'
-------------------
-Resolve: 'UnhollowerBaseLib, Version=0.4.18.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'UnhollowerBaseLib, Version=0.4.18.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\UnhollowerBaseLib.dll'
-------------------
-Resolve: 'UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'UnityEngine.UI, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\UnityEngine.UI.dll'
-------------------
-Resolve: 'DOTween, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'DOTween, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\MelonLoader\Managed\DOTween.dll'
-------------------
-Resolve: 'UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Found single assembly: 'UnityEngine.AnimationModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null'
-Load from: 'C:\Games\Tale of Immortal v1.2.107.259\Mod\modFQA\代码编写教程\ModMain\dll\UnityEngine.AnimationModule.dll'
-------------------
-Resolve: 'Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'
-Found single assembly: 'Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed'
-Load from: 'C:\Program Files\IIS\Microsoft Web Deploy V3\Newtonsoft.Json.dll'
-#endif
