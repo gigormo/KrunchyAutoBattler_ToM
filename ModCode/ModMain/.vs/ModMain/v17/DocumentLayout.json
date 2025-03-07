@@ -15,7 +15,7 @@
       "RelativeMoniker": "D:0:0:{3591496F-6A4C-477A-A04C-177FB616E439}|ModMain.csproj|solutionrelative:example\\example.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{3591496F-6A4C-477A-A04C-177FB616E439}|ModMain.csproj|c:\\games\\tale of immortal\\modexportdata\\krunchyautobattle\\modproject\\modcode\\modmain\\example\\patchmartialtool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{3591496F-6A4C-477A-A04C-177FB616E439}|ModMain.csproj|C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\example\\patchmartialtool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{3591496F-6A4C-477A-A04C-177FB616E439}|ModMain.csproj|solutionrelative:example\\patchmartialtool.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -51,7 +51,7 @@
               "RelativeDocumentMoniker": "ModMain.cs",
               "ToolTip": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\ModMain.cs",
               "RelativeToolTip": "ModMain.cs",
-              "ViewState": "AgIAAAwGAAAAAAAAAAAAwAoGAAArAAAAAAAAAA==",
+              "ViewState": "AgIAAFoBAAAAAAAAAAAgwHQBAABAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-02T09:56:33.584Z",
               "IsPinned": true,
@@ -68,8 +68,7 @@
               "ViewState": "AgIAACUAAAAAAAAAAAAowEQAAAAMAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-04T03:26:12.272Z",
-              "IsPinned": true,
-              "EditorCaption": ""
+              "IsPinned": true
             },
             {
               "$type": "Document",
@@ -82,21 +81,7 @@
               "ViewState": "AgIAAAwAAAAAAAAAAAAcwBgAAABIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-05T08:44:15.143Z",
-              "IsPinned": true,
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "PatchMartialTool.cs",
-              "DocumentMoniker": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\Example\\PatchMartialTool.cs",
-              "RelativeDocumentMoniker": "Example\\PatchMartialTool.cs",
-              "ToolTip": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\Example\\PatchMartialTool.cs",
-              "RelativeToolTip": "Example\\PatchMartialTool.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-07T02:41:58.744Z",
-              "EditorCaption": ""
+              "IsPinned": true
             },
             {
               "$type": "Bookmark",
@@ -164,6 +149,18 @@
             },
             {
               "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "PatchMartialTool.cs",
+              "DocumentMoniker": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\Example\\PatchMartialTool.cs",
+              "RelativeDocumentMoniker": "Example\\PatchMartialTool.cs",
+              "ToolTip": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\Example\\PatchMartialTool.cs",
+              "RelativeToolTip": "Example\\PatchMartialTool.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-07T02:41:58.744Z"
+            },
+            {
+              "$type": "Document",
               "DocumentIndex": 5,
               "Title": "SettingData.cs",
               "DocumentMoniker": "C:\\Games\\Tale of Immortal\\ModExportData\\KrunchyAutoBattle\\ModProject\\ModCode\\ModMain\\Example\\SettingData.cs",
@@ -172,8 +169,7 @@
               "RelativeToolTip": "Example\\SettingData.cs",
               "ViewState": "AgIAAFsAAAAAAAAAAAAxwBAAAAAOAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T05:37:35.681Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-05T05:37:35.681Z"
             },
             {
               "$type": "Document",
@@ -185,8 +181,7 @@
               "RelativeToolTip": "Example\\GetMouseWorldPosi.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAnAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T08:44:10.253Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-05T08:44:10.253Z"
             },
             {
               "$type": "Document",
@@ -198,8 +193,7 @@
               "RelativeToolTip": "Example\\LogTool.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-05T09:47:47.582Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-03-05T09:47:47.582Z"
             },
             {
               "$type": "Document",
